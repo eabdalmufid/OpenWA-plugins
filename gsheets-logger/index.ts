@@ -59,7 +59,7 @@ export default class GSheetsLogger implements IPlugin {
   private buffer: string[][] = [];
   private client: SheetsClient | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private flushing = false;
+  private flushingPromise: Promise<void> | null = null;
   private ctx: PluginContext | null = null;
   private batchSize = 20;
 
@@ -126,17 +126,24 @@ export default class GSheetsLogger implements IPlugin {
     if (this.buffer.length >= this.batchSize) void this.flush();
   }
 
-  private async flush(): Promise<void> {
-    if (this.flushing || !this.client || this.buffer.length === 0) return;
-    this.flushing = true;
-    try {
-      const client = this.client;
-      await flushBuffer(this.buffer, (rows) => client.appendRows(rows));
-      await this.ctx?.storage.set(BUFFER_KEY, this.buffer);
-    } catch (err) {
-      this.ctx?.logger.error('gsheets-logger: flush failed, will retry next tick', err);
-    } finally {
-      this.flushing = false;
-    }
+  // Returns the in-flight flush when one is running, so onDisable can `await this.flush()` and wait
+  // for it before persisting. The guard must be a Promise, not a boolean: with a boolean, a disable
+  // racing a failing in-flight flush would persist the post-splice (empty) buffer at the same moment
+  // flushBuffer restores the rows in memory — losing them. Awaiting the real promise closes that race.
+  private flush(): Promise<void> {
+    if (this.flushingPromise) return this.flushingPromise;
+    if (!this.client || this.buffer.length === 0) return Promise.resolve();
+    const client = this.client;
+    this.flushingPromise = (async () => {
+      try {
+        await flushBuffer(this.buffer, (rows) => client.appendRows(rows));
+        await this.ctx?.storage.set(BUFFER_KEY, this.buffer);
+      } catch (err) {
+        this.ctx?.logger.error('gsheets-logger: flush failed, will retry next tick', err);
+      } finally {
+        this.flushingPromise = null;
+      }
+    })();
+    return this.flushingPromise;
   }
 }

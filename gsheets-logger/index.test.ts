@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseConfig, flushBuffer } from './index.ts';
+import GSheetsLogger, { parseConfig, flushBuffer } from './index.ts';
 
 const validSa = JSON.stringify({ client_email: 'a@b.iam.gserviceaccount.com', private_key: 'KEY' });
 
@@ -45,4 +45,33 @@ test('flushBuffer restores the batch ahead of newer rows on failure', async () =
   const buffer = [['a'], ['b']];
   await assert.rejects(flushBuffer(buffer, async () => { buffer.push(['c']); throw new Error('down'); }));
   assert.deepEqual(buffer, [['a'], ['b'], ['c']]);               // batch restored to front, newer row after
+});
+
+// Regression: onDisable must await an in-flight flush so a failing flush's restored rows are the ones
+// persisted — not the empty post-splice buffer. With the old `flushing` boolean this lost the rows.
+test('onDisable awaits an in-flight failing flush and persists the restored rows', async () => {
+  const logger = new GSheetsLogger();
+  const setCalls: string[][][] = [];
+  let releaseAppend = (): void => {};
+  const appendGate = new Promise<void>((resolve) => { releaseAppend = resolve; });
+
+  // Inject internals directly (private fields) to drive the flush/onDisable interleaving deterministically.
+  const harness = logger as unknown as {
+    client: unknown; ctx: unknown; buffer: string[][]; flush(): Promise<void>;
+  };
+  harness.client = { appendRows: async (): Promise<void> => { await appendGate; throw new Error('sheets 500'); } };
+  harness.ctx = {
+    storage: { set: async (_key: string, value: string[][]): Promise<void> => { setCalls.push(value.map((r) => [...r])); } },
+    logger: { error: (): void => {}, warn: (): void => {} },
+  };
+  harness.buffer = [['a'], ['b']];
+
+  const flushPromise = harness.flush();   // starts flush; appendRows blocks on the gate
+  const disablePromise = logger.onDisable(); // must await the in-flight flush, not persist [] early
+  releaseAppend();                         // let appendRows reject -> flushBuffer restores [a,b]
+  await Promise.allSettled([flushPromise, disablePromise]);
+
+  // The persisted buffer must be the restored rows, never an empty array.
+  assert.deepEqual(setCalls.at(-1), [['a'], ['b']]);
+  assert.ok(!setCalls.some((c) => c.length === 0), 'must never persist an empty buffer while rows are unsent');
 });
