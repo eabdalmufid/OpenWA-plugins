@@ -82,6 +82,9 @@ export default class GSheetsLogger implements IPlugin {
   }
 
   async onConfigChange(ctx: PluginContext, _newConfig: Record<string, unknown>): Promise<void> {
+    // Drain to the current (old) client before swapping, so rows buffered before a spreadsheet/credential
+    // rotation land in the sheet they belong to — not the new one. flush() is guarded and a no-op when empty.
+    await this.flush();
     this.ctx = ctx;
     const { config, sa } = parseConfig(ctx.config);
     this.client = new SheetsClient(sa, config.spreadsheetId, config.sheetTab);

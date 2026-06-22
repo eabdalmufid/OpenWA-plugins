@@ -75,3 +75,24 @@ test('onDisable awaits an in-flight failing flush and persists the restored rows
   assert.deepEqual(setCalls.at(-1), [['a'], ['b']]);
   assert.ok(!setCalls.some((c) => c.length === 0), 'must never persist an empty buffer while rows are unsent');
 });
+
+// onConfigChange now fires for sandboxed plugins (OpenWA #430), so rows buffered before a
+// spreadsheet/credential rotation must drain to the OLD client before the swap, not the new sheet.
+test('onConfigChange drains the buffer to the old client before swapping', async () => {
+  const logger = new GSheetsLogger();
+  const sentToOld: string[][] = [];
+  const harness = logger as unknown as { client: unknown; ctx: unknown; buffer: string[][] };
+  harness.client = { appendRows: async (rows: string[][]): Promise<void> => { sentToOld.push(...rows); } };
+  harness.ctx = { storage: { set: async (): Promise<void> => {} }, logger: { error: (): void => {}, warn: (): void => {} } };
+  harness.buffer = [['old-row']];
+
+  const newConfig = {
+    serviceAccountJson: JSON.stringify({ client_email: 'a@b.iam.gserviceaccount.com', private_key: 'KEY' }),
+    spreadsheetId: 'NEW_SHEET',
+  };
+  await logger.onConfigChange({ config: newConfig } as unknown as never, newConfig);
+  await logger.onUnload(); // stop the interval started by onConfigChange
+
+  assert.deepEqual(sentToOld, [['old-row']]); // buffered row went to the OLD client
+  assert.equal(harness.buffer.length, 0);     // buffer drained before the swap
+});

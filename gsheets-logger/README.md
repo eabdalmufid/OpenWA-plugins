@@ -65,15 +65,16 @@ a single quote (`'`) when they start with a formula trigger:
   plugin appends data rows only and does not write a header.
 - Append uses `valueInputOption=RAW`, so cell values are stored literally (never evaluated as formulas).
 
-## Operational caveats (current OpenWA runtime)
+## Compatibility & runtime notes
 
-External plugins run **sandboxed in a worker thread**. Two host limitations affect this plugin until
-OpenWA forwards the corresponding lifecycle calls into the worker:
+External plugins run **sandboxed in a worker thread**. This plugin relies on two host capabilities that
+shipped after **v0.6.0** (on `main`, OpenWA #430):
 
-- **Config changes need a re-enable.** Updating config via `PUT /plugins/gsheets-logger/config` persists
-  the new values but does not reach the running instance (OpenWA does not yet forward `onConfigChange` to
-  sandboxed plugins). **Disable then re-enable** the plugin for new credentials/spreadsheet to take effect.
-- **Non-graceful shutdown drops buffered rows.** Already-flushed rows are durable, but rows buffered since
-  the last flush (≤ `flushIntervalSec`) are lost if the process is killed without the plugin being disabled
-  first, since OpenWA does not currently run `onDisable` on shutdown. Lower `flushIntervalSec` to narrow
-  this window.
+- **Live config updates.** `PUT /plugins/gsheets-logger/config` reaches the running plugin — it rebuilds
+  the Sheets client, drains the buffer to the *old* sheet first, then restarts the timer. On the initial
+  v0.6.0 sandbox release this was not delivered; on that build, disable + re-enable after a config change.
+- **Graceful-shutdown flush.** On SIGTERM the buffer is flushed and persisted before exit. A hard kill
+  (SIGKILL/OOM) can still drop rows buffered since the last flush (≤ `flushIntervalSec`) — lower the
+  interval to narrow that window.
+
+`message:ack` rows require an OpenWA build that emits the hook (#427, v0.6.0+).
