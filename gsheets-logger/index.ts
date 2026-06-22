@@ -101,8 +101,7 @@ export default class GSheetsLogger implements IPlugin {
   private startTimer(intervalSec: number): void {
     this.stopTimer();
     this.timer = setInterval(() => void this.flush(), intervalSec * 1000);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.timer as any).unref?.();
+    this.timer.unref?.();
   }
 
   private stopTimer(): void {
