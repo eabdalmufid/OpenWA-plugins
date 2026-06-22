@@ -76,6 +76,6 @@ docs/
 docs/plans/
 CLAUDE.md
 _docs/
-
+.superpowers/
 # Packaged plugins
 *.zip
