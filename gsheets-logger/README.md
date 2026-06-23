@@ -24,9 +24,9 @@
 | **Repository** | [OpenWA-plugins/gsheets-logger](https://github.com/rmyndharis/OpenWA-plugins/tree/main/gsheets-logger) |
 <!-- END DETAILS -->
 
-The installed version is also visible in the OpenWA dashboard Plugins list (`v0.2.0`), via
+The installed version is also visible in the OpenWA dashboard Plugins list (`v0.2.1`), via
 `GET /plugins/gsheets-logger`, and at runtime in the enable log line and `healthCheck`
-(`GET /plugins/gsheets-logger/health` → `"v0.2.0 — N rows buffered"`).
+(`GET /plugins/gsheets-logger/health` → `"v0.2.1 — N rows buffered"`).
 
 ## Features
 
@@ -117,7 +117,7 @@ The service-account JSON is marked `secret` in the config schema, so OpenWA mask
 
 ## Changelog
 
-See [CHANGELOG.md](./CHANGELOG.md). Latest: **0.2.0** (2026-06-22) — first packaged release.
+See [CHANGELOG.md](./CHANGELOG.md). Latest: **0.2.1** (2026-06-23) — first packaged release.
 
 ## License
 
