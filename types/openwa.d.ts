@@ -4,9 +4,9 @@
 // v0.7 surface (added below): `ctx.net.fetch` (host-proxied, SSRF-guarded outbound HTTP — gated by the
 // "net:fetch" permission + manifest `net.allow` host allowlist), and the manifest fields
 // `sessionScoped` (per-session activation; ctx.config is the resolved per-session slice), `net`, and
-// `configUi` (a sandboxed-iframe config editor). The richer `configSchema` field set (select/textarea/
-// array/object, options/items/properties, minimum/maximum/pattern) is plain manifest JSON — the plugin
-// still reads `ctx.config` as `Record<string, unknown>` and validates defensively.
+// `configUi` (a sandboxed-iframe config editor). The richer `configSchema` field set (textarea + enum
+// select, array/items, object/properties, min/max/pattern — see PluginConfigField) is plain manifest
+// JSON — the plugin still reads `ctx.config` as `Record<string, unknown>` and validates defensively.
 
 export type HookEvent =
   | 'session:created' | 'session:starting' | 'session:ready' | 'session:qr'
@@ -101,8 +101,37 @@ export interface PluginManifest {
   /** v0.7: a sandboxed-iframe config editor served by the host. */
   configUi?: { entry: string; height?: number };
   /** Declarative config schema (rendered by the host into an authenticated form). */
-  configSchema?: unknown;
+  configSchema?: PluginConfigSchema;
   [key: string]: unknown;
+}
+
+/**
+ * v0.7 declarative config schema — the host renders it into an authenticated form. Recursive: an
+ * `object` field nests `properties`; an `array` field describes its element via `items` (an
+ * array-of-rows when `items.type === 'object'`). The plugin still reads `ctx.config` as
+ * `Record<string, unknown>` and validates defensively — the schema only drives the host's form.
+ */
+export interface PluginConfigField {
+  /** 'textarea' is a multi-line string; a field with `enum` renders as a <select>. */
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'textarea';
+  title?: string;
+  description?: string;
+  default?: unknown;
+  enum?: unknown[];
+  required?: boolean;
+  /** Sensitive value (API key, token): masked on read, preserved on an unchanged write — at any depth. */
+  secret?: boolean;
+  /** Validation hints surfaced as HTML input attributes (advisory; not hard-enforced by the host). */
+  min?: number; // number: value bound; string/textarea: minLength; array: min rows
+  max?: number; // number: value bound; string/textarea: maxLength; array: max rows
+  pattern?: string; // string/textarea: HTML validation regex
+  items?: PluginConfigField; // array element schema; array-of-rows when items.type === 'object'
+  properties?: Record<string, PluginConfigField>; // nested-object fields (type: 'object')
+}
+
+export interface PluginConfigSchema {
+  type: 'object';
+  properties: Record<string, PluginConfigField>;
 }
 
 export interface PluginContext {

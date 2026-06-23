@@ -2,7 +2,7 @@
 
 The conventions every plugin in this repository follows, so the catalog stays consistent and
 management/automation stays easy. Verified against OpenWA's plugin runtime (sandboxed worker model,
-v0.6.x).
+v0.7.x).
 
 ## Principles
 
@@ -63,6 +63,29 @@ OpenWA-plugins/
   "testedOpenWAVersion": "0.6.1"
 }
 ```
+
+### `configSchema` field vocabulary (v0.7)
+
+A JSON-Schema-ish object the host renders into an authenticated form (writes go through
+`PUT /plugins/:id/config`). `{ "type": "object", "properties": { <key>: <field> } }`, where each
+field is:
+
+| Key | Applies to | Effect |
+| --- | ---------- | ------ |
+| `type` | all | `string` · `number` · `boolean` · `textarea` (multi-line string) · `object` · `array` |
+| `title` / `description` | all | label + helper text |
+| `default` | all | seeded into the form; also the blank value for a new array row |
+| `required` | all | marks the label (advisory — not hard-enforced by the host) |
+| `secret` | scalar | masked on read (shown as `***`); an unchanged `***` write keeps the stored value. Works at **any depth** (nested object / array row). |
+| `enum` | scalar | renders as a `<select>` of the listed values |
+| `min` / `max` | number / string·textarea / array | value bound · min/maxLength · row count (HTML attribute, advisory) |
+| `pattern` | string / textarea | HTML validation regex |
+| `properties` | `object` | nested fields, rendered as a sub-group |
+| `items` | `array` | the element schema; **array-of-rows** when `items.type === 'object'` (add/remove rows in the form) |
+
+`items` and `properties` nest arbitrarily (e.g. a menu tree of options → sub-options). The plugin
+still reads `ctx.config` as `Record<string, unknown>` and must validate defensively — the schema only
+drives the host's form, it is not enforced server-side.
 
 **Reserved ids** (cannot be used): `whatsapp-web.js`, `baileys`, `auto-reply`, `translation`.
 **Package limits** (enforced by OpenWA at install): ≤ 5 MB compressed, ≤ 200 files, ≤ 20 MB uncompressed.
