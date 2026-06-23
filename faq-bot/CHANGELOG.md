@@ -8,6 +8,20 @@ The version here always matches `manifest.json`'s `version`.
 
 ## [Unreleased]
 
+## [0.1.4] — 2026-06-24
+
+### Changed
+
+- The **Rules (JSON)** field now renders as a multi-line editor (manifest `textarea`) and its
+  description carries a copy-pasteable example, so the expected JSON shape is obvious.
+
+### Fixed
+
+- A single rule object is now accepted and wrapped in an array automatically, instead of failing
+  with "rules must be a JSON array" — pasting one `{ "mode", "pattern", "reply" }` just works.
+- Invalid-rules errors now include a concrete example and a "use double quotes, not single" hint,
+  so the common single-quote / unquoted-key mistakes are easy to correct.
+
 ## [0.1.3] — 2026-06-23
 
 ### Fixed

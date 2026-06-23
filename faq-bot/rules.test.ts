@@ -8,10 +8,21 @@ const ok = JSON.stringify([
   { mode: 'regex', pattern: '^/start', reply: 'Selamat datang' },
 ]);
 
-test('parseRules rejects non-JSON, non-array, and empty', () => {
+test('parseRules rejects non-JSON, JSON primitives, and empty', () => {
   assert.throws(() => parseRules('not json'));
-  assert.throws(() => parseRules('{}'), /array/i);
+  // JSON primitives are not an array/object → still rejected with the array hint.
+  assert.throws(() => parseRules('42'), /array/i);
+  assert.throws(() => parseRules('"hi"'), /array/i);
+  assert.throws(() => parseRules('null'), /array/i);
   assert.throws(() => parseRules('[]'), /no usable/i);
+});
+
+test('parseRules accepts a single rule object by wrapping it in an array', () => {
+  const { rules } = parseRules(JSON.stringify({ mode: 'contains', pattern: 'hi', reply: 'hello' }));
+  assert.equal(rules.length, 1);
+  assert.equal(rules[0].reply, 'hello');
+  // An object missing required fields is still wrapped, then rejected by field validation.
+  assert.throws(() => parseRules('{}'), /mode/i);
 });
 
 test('parseRules rejects a rule with a bad mode or empty pattern/reply', () => {

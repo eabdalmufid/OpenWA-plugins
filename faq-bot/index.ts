@@ -22,7 +22,11 @@ export function parseConfig(raw: Record<string, unknown>): {
   try {
     parsed = parseRules(rulesJson);
   } catch (err) {
-    throw new Error(`faq-bot: invalid rules — ${err instanceof Error ? err.message : String(err)}`);
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `faq-bot: invalid rules — ${detail}. Expected a JSON array like ` +
+        `[{"mode":"contains","pattern":"openwa","reply":"yes?"}] — use double quotes, not single.`,
+    );
   }
 
   const cooldown = Number(raw.fallbackCooldownSec ?? 600);

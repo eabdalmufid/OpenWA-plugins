@@ -74,8 +74,14 @@ export function isSafeRegexPattern(p: string): boolean {
  * not kill the whole set.
  */
 export function parseRules(json: string): { rules: CompiledRule[]; skipped: string[] } {
-  const parsed: unknown = JSON.parse(json);
-  if (!Array.isArray(parsed)) throw new Error('rules must be a JSON array');
+  let parsed: unknown = JSON.parse(json);
+  // Convenience: accept a single rule object and wrap it, so pasting one { mode, pattern, reply }
+  // (a common mistake) works instead of erroring with "rules must be a JSON array". A JSON primitive
+  // or null is NOT an object here and still falls through to the array check below.
+  if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+    parsed = [parsed];
+  }
+  if (!Array.isArray(parsed)) throw new Error('rules must be a JSON array (e.g. [{"mode":"contains","pattern":"hi","reply":"hello"}])');
 
   const rules: CompiledRule[] = [];
   const skipped: string[] = [];

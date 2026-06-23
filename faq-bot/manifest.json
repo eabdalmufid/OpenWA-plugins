@@ -1,7 +1,7 @@
 {
   "id": "faq-bot",
   "name": "FAQ / Auto-Reply Bot",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "extension",
   "main": "dist/index.js",
   "description": "Auto-replies to inbound WhatsApp messages from configurable FAQ keyword/regex rules.",
@@ -20,8 +20,8 @@
   "configSchema": {
     "type": "object",
     "properties": {
-      "rules": { "type": "string", "required": true, "title": "Rules (JSON)",
-        "description": "JSON array of { mode: 'contains'|'exact'|'regex', pattern: string, reply: string }." },
+      "rules": { "type": "textarea", "required": true, "title": "Rules (JSON)",
+        "description": "JSON array of { mode: 'contains'|'exact'|'regex', pattern, reply }. Use double quotes. A single object is also accepted. Example: [{\"mode\":\"contains\",\"pattern\":\"openwa\",\"reply\":\"yes?\"}]" },
       "fallbackReply": { "type": "string", "default": "", "title": "Fallback reply",
         "description": "Sent when no rule matches. Leave empty to stay silent." },
       "fallbackCooldownSec": { "type": "number", "default": 600, "title": "Fallback cooldown (seconds per chat)",
