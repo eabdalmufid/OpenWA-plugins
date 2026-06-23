@@ -53,10 +53,14 @@ await build({
 const zipName = `${plugin}.zip`;
 const zipPath = join(root, zipName);
 await rm(zipPath, { force: true });
-const result = spawnSync('zip', ['-r', zipPath, 'manifest.json', 'dist/index.js', 'dist/package.json'], {
-  cwd: dir,
-  stdio: 'inherit',
-});
+const entries = ['manifest.json', 'dist/index.js', 'dist/package.json'];
+// A configUi plugin ships a static editor bundle the host serves in a sandboxed iframe — include it.
+if (manifest.configUi?.entry) {
+  const ui = manifest.configUi.entry;
+  if (!existsSync(join(dir, ui))) fail(`configUi.entry "${ui}" not found`);
+  entries.push(ui.includes('/') ? ui.split('/')[0] : ui);
+}
+const result = spawnSync('zip', ['-r', zipPath, ...entries], { cwd: dir, stdio: 'inherit' });
 if (result.status !== 0) fail('zip failed (is the `zip` CLI installed?)');
 
 // ── Report size + sha256 (release artifacts — surfaced here and in the GitHub Release) ──

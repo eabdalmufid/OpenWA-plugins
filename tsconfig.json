@@ -9,5 +9,12 @@
     "allowImportingTsExtensions": true,
     "esModuleInterop": true
   },
-  "include": ["gsheets-logger/**/*.ts", "types/**/*.d.ts"]
+  "include": [
+    "gsheets-logger/**/*.ts",
+    "faq-bot/**/*.ts",
+    "after-hours/**/*.ts",
+    "chat-flow/**/*.ts",
+    "group-translate/**/*.ts",
+    "types/**/*.d.ts"
+  ]
 }

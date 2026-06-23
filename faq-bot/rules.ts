@@ -26,21 +26,22 @@ export function parseRules(json: string): { rules: CompiledRule[]; skipped: stri
   const skipped: string[] = [];
   parsed.forEach((raw, i) => {
     const r = (raw ?? {}) as Partial<Rule>;
-    if (!MODES.includes(r.mode as RuleMode)) throw new Error(`rule ${i}: invalid mode (${String(r.mode)})`);
+    const mode = r.mode as RuleMode;
+    if (!MODES.includes(mode)) throw new Error(`rule ${i}: invalid mode (${String(r.mode)})`);
     if (typeof r.pattern !== 'string' || r.pattern.length === 0) {
       throw new Error(`rule ${i}: pattern must be a non-empty string`);
     }
     if (typeof r.reply !== 'string' || r.reply.length === 0) {
       throw new Error(`rule ${i}: reply must be a non-empty string`);
     }
-    if (r.mode === 'regex') {
+    if (mode === 'regex') {
       try {
         rules.push({ mode: 'regex', pattern: r.pattern, reply: r.reply, regex: new RegExp(r.pattern, 'i') });
       } catch {
         skipped.push(r.pattern);
       }
     } else {
-      rules.push({ mode: r.mode, pattern: r.pattern, reply: r.reply });
+      rules.push({ mode, pattern: r.pattern, reply: r.reply });
     }
   });
 

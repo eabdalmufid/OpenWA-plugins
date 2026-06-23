@@ -1,5 +1,12 @@
 // Vendored OpenWA plugin contract. There is no published @openwa SDK package; keep this in sync
-// with the OpenWA version you target (0.5.x). All imports of this module must be `import type`.
+// with the OpenWA version you target. All imports of this module must be `import type`.
+//
+// v0.7 surface (added below): `ctx.net.fetch` (host-proxied, SSRF-guarded outbound HTTP — gated by the
+// "net:fetch" permission + manifest `net.allow` host allowlist), and the manifest fields
+// `sessionScoped` (per-session activation; ctx.config is the resolved per-session slice), `net`, and
+// `configUi` (a sandboxed-iframe config editor). The richer `configSchema` field set (select/textarea/
+// array/object, options/items/properties, minimum/maximum/pattern) is plain manifest JSON — the plugin
+// still reads `ctx.config` as `Record<string, unknown>` and validates defensively.
 
 export type HookEvent =
   | 'session:created' | 'session:starting' | 'session:ready' | 'session:qr'
@@ -55,6 +62,29 @@ export interface PluginEngineReadCapability {
   getChats(sessionId: string): Promise<unknown>;
 }
 
+// ── v0.7: host-proxied, SSRF-guarded outbound HTTP ──────────────────────────────────────────────
+// Gated by the "net:fetch" permission + manifest `net.allow` (host:port allowlist; deny by default).
+// Use this for ALL outbound HTTP — the raw worker `fetch` is unguarded and discouraged.
+export interface PluginNetRequestInit {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string;
+  timeoutMs?: number;
+}
+
+export interface PluginNetResponse {
+  ok: boolean;
+  status: number;
+  headers: Record<string, string>;
+  text(): Promise<string>;
+  json<T = unknown>(): Promise<T>;
+  arrayBuffer(): Promise<ArrayBuffer>;
+}
+
+export interface PluginNetCapability {
+  fetch(url: string, init?: PluginNetRequestInit): Promise<PluginNetResponse>;
+}
+
 export interface PluginManifest {
   id: string;
   name: string;
@@ -64,12 +94,21 @@ export interface PluginManifest {
   permissions?: string[];
   sessions?: string[];
   hooks?: HookEvent[];
+  /** v0.7: per-session activation (default true). The platform owns which sessions a plugin runs for. */
+  sessionScoped?: boolean;
+  /** v0.7: outbound HTTP host allowlist for ctx.net.fetch — "host:port" entries; deny by default. */
+  net?: { allow: string[] };
+  /** v0.7: a sandboxed-iframe config editor served by the host. */
+  configUi?: { entry: string; height?: number };
+  /** Declarative config schema (rendered by the host into an authenticated form). */
+  configSchema?: unknown;
   [key: string]: unknown;
 }
 
 export interface PluginContext {
   pluginId: string;
   manifest: PluginManifest;
+  /** The RESOLVED config for `sessionId` (the per-session slice merged over the "*" defaults). */
   config: Record<string, unknown>;
   hookManager: unknown;
   logger: PluginLogger;
@@ -77,6 +116,8 @@ export interface PluginContext {
   registerHook(event: HookEvent, handler: HookHandler, priority?: number): void;
   messages: PluginMessagingCapability;
   engine: PluginEngineReadCapability;
+  /** v0.7: host-proxied, SSRF-guarded outbound HTTP (needs the "net:fetch" permission + manifest net.allow). */
+  net: PluginNetCapability;
 }
 
 export interface IPlugin {
@@ -100,5 +141,6 @@ export interface IncomingMessage {
   isGroup: boolean;
   author?: string;
   senderPhone?: string | null;
+  mentionedIds?: string[];
   contact?: { name?: string; pushName?: string };
 }
