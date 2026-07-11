@@ -22,17 +22,17 @@
     "type": "object",
     "properties": {
       "baseUrl": { "type": "string", "title": "Base URL", "required": true,
-        "description": "Origin API HTTPS, mis. https://erp.example.com. Host-nya auto-added ke allowlist outbound (allowConfigHosts). Wajib non-empty — tanpa ini setiap fetch diam-diam di-gate jadi no-op." },
+        "description": "HTTPS origin, e.g. https://erp.example.com. Its host is auto-added to the outbound allowlist (allowConfigHosts). Must be non-empty — without it every fetch is silently gated to a no-op." },
       "authType": { "type": "string", "enum": ["none", "bearer", "apikey"], "default": "none" },
       "authToken": { "type": "string", "title": "Token / API key", "secret": true,
-        "description": "Bearer token atau API key (sesuai authType). Dimasking ***." },
+        "description": "Bearer token or API key (per authType). Masked ***." },
       "apiKeyHeader": { "type": "string", "default": "X-API-Key",
-        "description": "Nama header untuk authType=apikey." },
+        "description": "Header name to use when authType=apikey." },
       "respondInGroups": { "type": "boolean", "default": false },
       "timeoutMs": { "type": "number", "default": 3000, "min": 500 },
       "cooldownSeconds": { "type": "number", "default": 3, "min": 0 },
       "actions": { "type": "textarea", "title": "Actions (JSON array)", "required": true,
-        "description": "Array action sebagai JSON string. Contoh: [{\"id\":\"check-order\",\"match\":{\"type\":\"prefix\",\"value\":\"cek-order \"},\"request\":{\"method\":\"GET\",\"path\":\"/orders/{{args.0}}\"},\"replyTemplate\":\"Pesanan {{response.orderId}}: {{response.status}}\"}]. Di-parse di config.ts." }
+        "description": "JSON array of actions. Example: [{\"id\":\"check-order\",\"match\":{\"type\":\"prefix\",\"value\":\"cek-order \"},\"request\":{\"method\":\"GET\",\"path\":\"/orders/{{args.0}}\"},\"replyTemplate\":\"Order {{response.orderId}}: {{response.status}}\"}]. Parsed at config time." }
     }
   }
 }

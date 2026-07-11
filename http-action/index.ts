@@ -9,8 +9,8 @@ import { hasSeen, markSeen, prune, allowCooldown, type StorageLike, DEDUP_TTL_MS
 
 const PLUGIN = 'http-action';
 const REPLY_MAX = 4000;
-const DEFAULT_NOT_FOUND = 'Data tidak ditemukan.';
-const DEFAULT_ERROR = 'Layanan sedang bermasalah. Coba lagi nanti.';
+const DEFAULT_NOT_FOUND = 'Not found.';
+const DEFAULT_ERROR = 'Service is temporarily unavailable. Please try again later.';
 
 /** Dependencies handleMessage needs, injected so the per-message logic tests without OpenWA. */
 export interface HandleDeps {
