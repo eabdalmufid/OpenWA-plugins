@@ -17,7 +17,7 @@ Extend your WhatsApp gateway with drop-in capabilities: log conversations to a s
 
 ---
 
-> **Status:** Early development. This repository is the home for installable OpenWA plugins and the conventions for building them. The plugin catalog grows as plugins reach release.
+> **Status:** Active — a growing catalog. This repository is the home for installable OpenWA plugins and the conventions for building them. The catalog grows as plugins reach release.
 
 ## Overview
 
@@ -50,7 +50,7 @@ The table above is generated from each plugin's `manifest.json` + `CHANGELOG.md`
 (and mirrored in [`plugins.json`](./plugins.json)). See [PLUGIN-STANDARD.md](./PLUGIN-STANDARD.md) for the
 metadata standard every plugin follows.
 
-**On the roadmap:** an FAQ / auto-reply bot and an automatic closing-greeting plugin for new leads. Want something else? [Open an issue](https://github.com/rmyndharis/OpenWA-plugins/issues) or [contribute one](#contributing).
+**On the roadmap:** an automatic closing-greeting plugin for new leads. Want something else? [Open an issue](https://github.com/rmyndharis/OpenWA-plugins/issues) or [contribute one](#contributing).
 
 ## Installing a plugin
 
@@ -119,7 +119,7 @@ my-plugin/
   "type": "extension",          // only "extension" is user-installable
   "main": "dist/index.js",      // require()-able file inside the package
   "description": "…",
-  "permissions": ["messages:send"],   // only the two below are enforced
+  "permissions": ["messages:send"],   // enforced gates: messages:send · engine:read · net:fetch · webhook:ingress · conversation:send
   "sessions": ["*"],                   // session-id scope; omit ⇒ all sessions
   "hooks": ["message:received"],       // declared interest (informational)
   "configSchema": {                    // drives the dashboard settings form
@@ -184,7 +184,12 @@ The `PluginContext` exposes a deliberately small surface. The two action capabil
 | Capability | Methods | Permission |
 | ---------- | ------- | ---------- |
 | `ctx.messages` | `sendText(session, chat, text)` · `reply(session, chat, quotedId, text)` | `messages:send` |
-| `ctx.engine` (read-only) | `getGroupInfo` · `getContacts` · `getContactById` · `checkNumberExists` · `getChats` | `engine:read` |
+| `ctx.engine` (read-only) | `getGroupInfo` · `getContacts` · `getContactById` · `checkNumberExists` · `getChats` · `getChatHistory` (0.8.5+) · `canonicalChatId` (0.8.7+) | `engine:read` |
+| `ctx.net` | `fetch(url, init)` — host-proxied, SSRF-guarded outbound HTTP (0.7+) | `net:fetch` + manifest `net.allow` |
+| `ctx.conversations` | `send(envelope)` — normalized outbound (text/image/file/audio/video/voice/location) (v1) | `conversation:send` |
+| `ctx.handover` | `set(…, state)` — bot/human/closed handover for a mapped chat (v1) | `conversation:send` |
+| `ctx.mappings` | `upsert` · `get` · `getByProvider` — WA-chat ↔ provider-conversation mapping (v1) | `conversation:send` |
+| `ctx.registerWebhook` | claim an inbound ingress route (v1) | `webhook:ingress` |
 | `ctx.storage` | `get` · `set` · `delete` · `list` (namespaced per plugin) | — |
 | `ctx.logger` | `log` · `debug` · `warn` · `error` | — |
 
@@ -196,7 +201,7 @@ Also available: `ctx.config`, `ctx.manifest`, `ctx.pluginId`, `ctx.registerHook`
 - **`type` must be `extension`.** Engine, storage, queue, and auth plugins are first-party built-ins and cannot be installed at runtime.
 - **Package limits:** `.zip` ≤ 5 MB compressed, ≤ 200 files, ≤ 20 MB uncompressed. Bundle your dependencies — there is no `npm install` at install time.
 - **No published SDK package.** Vendor the OpenWA types (see [`types/openwa.d.ts`](./types/openwa.d.ts)); they are the de-facto contract.
-- **No sandbox.** Plugins run in-process with full Node privileges. Install only plugins you trust; only `main`'s path is containment-checked.
+- **Sandboxed worker.** Since OpenWA v0.6.0 each plugin runs in its own worker thread; capabilities and outbound HTTP are host-gated (`ctx.net.fetch` is SSRF-guarded; every capability is checked against the declared `permissions`). The worker still has Node APIs within its thread, so install only plugins you trust.
 - **Compatibility is unmanaged.** There is no host-version negotiation yet. Pin the OpenWA version you tested against in your plugin's README.
 
 ## Authoring a plugin
@@ -234,7 +239,7 @@ OpenWA-plugins/
 
 ## Compatibility
 
-Plugins here target the OpenWA **0.5.x** plugin runtime. Because OpenWA does not yet enforce host-version compatibility, always test a plugin against your specific OpenWA version before enabling it in production.
+Each plugin declares its `minOpenWAVersion` (ranging from 0.6.x to 0.8.x in this repo — see the plugin's README Details). OpenWA does not yet hard-enforce host-version compatibility, so always test a plugin against your specific OpenWA version before enabling it in production.
 
 ## Contributing
 
@@ -250,7 +255,7 @@ Please keep plugins focused, dependency-light, and least-privilege — declare o
 
 ## Security
 
-Plugins run **in-process without sandboxing** and have full Node privileges once enabled. Treat every plugin as trusted code:
+Plugins run in a **sandboxed worker thread** (since OpenWA v0.6.0): capabilities and outbound HTTP are host-gated (`ctx.net.fetch` is SSRF-guarded; every capability is checked against the declared `permissions`). The worker still has Node APIs within its thread, so treat every plugin as trusted code:
 
 - Only install plugins from sources you trust.
 - Review the manifest's `permissions` and `sessions` before enabling.
