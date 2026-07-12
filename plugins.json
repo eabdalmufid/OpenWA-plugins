@@ -1028,6 +1028,33 @@
     "download": "https://github.com/rmyndharis/OpenWA-plugins/releases/download/http-action-v0.1.0/http-action.zip"
   },
   {
+    "id": "supabase-otp-hook",
+    "name": "Supabase Auth OTP",
+    "version": "0.1.0",
+    "type": "extension",
+    "status": "beta",
+    "description": "Deliver Supabase Auth phone OTPs over WhatsApp.",
+    "author": "maplerichie",
+    "license": "MIT",
+    "keywords": [
+      "supabase",
+      "auth",
+      "otp",
+      "sms",
+      "whatsapp",
+      "verification",
+      "standard-webhooks",
+      "openwa"
+    ],
+    "minOpenWAVersion": "0.8.16",
+    "testedOpenWAVersion": "0.8.16",
+    "releasedAt": "2026-07-07",
+    "repoPath": "supabase-otp-hook",
+    "repoUrl": "https://github.com/maplerichie/OpenWA-plugins",
+    "homepage": "https://github.com/maplerichie/OpenWA-plugins/tree/main/supabase-otp-hook",
+    "download": "https://github.com/maplerichie/OpenWA-plugins/releases/download/supabase-otp-hook-v0.1.0/supabase-otp-hook.zip"
+  },
+  {
     "id": "typebot-connector",
     "name": "Typebot Connector",
     "version": "0.1.0",

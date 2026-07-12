@@ -19,6 +19,7 @@
     "chatwoot-adapter/**/*.ts",
     "typebot-connector/**/*.ts",
     "http-action/**/*.ts",
+    "supabase-otp-hook/**/*.ts",
     "types/**/*.d.ts"
   ]
 }
