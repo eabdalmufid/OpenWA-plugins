@@ -163,7 +163,7 @@ One entry per plugin, written by `scripts/catalog.mjs` from each manifest + chan
 
 Size and sha256 are **not** in the catalog — they are release artifacts (GitHub Release notes/assets),
 so the catalog stays deterministic and CI's drift check stays stable. This file is also the data source
-for a future OpenWA in-dashboard marketplace (see `OPENWA-MARKETPLACE.md`).
+for a future OpenWA in-dashboard marketplace.
 
 ## Tooling (npm scripts)
 
